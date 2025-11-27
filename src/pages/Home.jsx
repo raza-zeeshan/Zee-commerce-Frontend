@@ -34,7 +34,7 @@ function Home() {
   return (
     <Container>
       {/* Hero Carousel */}
-      <Carousel className="mb-5">
+      <Carousel className="mb-5 borderradius-8">
         <Carousel.Item>
           <div
             style={{ height: "400px", background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", borderRadius:"8px" }}
@@ -71,7 +71,7 @@ function Home() {
         <Row>
           {categories.map((category) => (
             <Col key={category.id} md={4} className="mb-3">
-              <Card className="h-100 text-center">
+              <Card className="h-100 text-center category-card">
                 <Card.Body>
                   <Card.Title>{category.name}</Card.Title>
                   <Card.Text>{category.description}</Card.Text>

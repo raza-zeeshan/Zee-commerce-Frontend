@@ -13,14 +13,11 @@ function Checkout() {
   const [shippingAddress, setShippingAddress] = useState(user?.address || '');
   const [phone, setPhone] = useState(user?.phone || '');
   const [error, setError] = useState('');
-  const [debugInfo, setDebugInfo] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setDebugInfo('');
     
-    // Validation
     if (!shippingAddress.trim()) {
       setError('Please enter shipping address');
       return;
@@ -39,7 +36,6 @@ function Checkout() {
     setLoading(true);
     
     try {
-      // Format order data exactly as backend expects
       const orderData = {
         userId: user.id,
         shippingAddress: shippingAddress.trim(),
@@ -51,38 +47,12 @@ function Checkout() {
         }))
       };
 
-      console.log('=== DEBUG INFO ===');
-      console.log('User:', user);
-      console.log('Cart Items:', cartItems);
-      console.log('Order Data:', orderData);
-      console.log('==================');
-
-      setDebugInfo(`Sending ${cartItems.length} items to server...`);
-
       const response = await orderAPI.create(orderData);
       
-      console.log('Response:', response);
-      console.log('Response Data:', response.data);
-      
-      setDebugInfo('Order created successfully!');
-      
-      // Clear cart after successful order
       clearCart();
-      
       alert('✅ Order placed successfully! Order ID: ' + response.data.id);
-      
-      // Navigate to orders page
       navigate('/orders');
     } catch (error) {
-      console.error('=== ERROR DETAILS ===');
-      console.error('Error object:', error);
-      console.error('Error response:', error.response);
-      console.error('Error status:', error.response?.status);
-      console.error('Error data:', error.response?.data);
-      console.error('Error message:', error.message);
-      console.error('====================');
-
-      // Extract detailed error message
       let errorMessage = 'Failed to place order. ';
       
       if (error.response?.status === 401) {
@@ -90,22 +60,16 @@ function Checkout() {
       } else if (error.response?.status === 403) {
         errorMessage = 'You do not have permission to place orders.';
       } else if (error.response?.status === 400) {
-        errorMessage = 'Invalid order data: ' + (error.response?.data?.error || error.response?.data?.message || 'Please check your input');
-      } else if (error.response?.status === 404) {
-        errorMessage = 'Server endpoint not found. Please check the backend.';
+        errorMessage = 'Invalid order data: ' + (error.response?.data?.error || 'Please check your input');
       } else if (error.response?.status === 500) {
         errorMessage = 'Server error. Please contact support.';
       } else if (error.message === 'Network Error') {
         errorMessage = 'Network error. Is the backend running on http://localhost:8080?';
       } else {
-        errorMessage = error.response?.data?.error 
-          || error.response?.data?.message 
-          || error.message 
-          || 'Unknown error occurred';
+        errorMessage = error.response?.data?.error || error.message || 'Unknown error occurred';
       }
       
       setError(errorMessage);
-      setDebugInfo(`Error: ${error.response?.status} - ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -127,18 +91,10 @@ function Checkout() {
     <Container>
       <h1 className="mb-4">Checkout</h1>
       
-      {/* Error Alert */}
       {error && (
         <Alert variant="danger" dismissible onClose={() => setError('')}>
           <Alert.Heading>Order Failed</Alert.Heading>
           <p>{error}</p>
-        </Alert>
-      )}
-
-      {/* Debug Info Alert */}
-      {debugInfo && (
-        <Alert variant="info" dismissible onClose={() => setDebugInfo('')}>
-          <small>{debugInfo}</small>
         </Alert>
       )}
       
@@ -150,20 +106,6 @@ function Checkout() {
             </Card.Header>
             <Card.Body>
               <Form onSubmit={handleSubmit}>
-                <Form.Group className="mb-3">
-                  <Form.Label>
-                    <strong>User ID:</strong>
-                  </Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={user?.id || 'Not available'}
-                    disabled
-                  />
-                  <Form.Text className="text-muted">
-                    {user?.id ? '✓ User ID found' : '✗ User ID missing - Login may have failed'}
-                  </Form.Text>
-                </Form.Group>
-
                 <Form.Group className="mb-3">
                   <Form.Label>Full Name</Form.Label>
                   <Form.Control
@@ -253,7 +195,7 @@ function Checkout() {
               <hr />
               
               <div className="d-flex justify-content-between mb-2">
-                <span>Items ({cartItems.length}):</span>
+                <span>Subtotal:</span>
                 <strong>${getCartTotal().toFixed(2)}</strong>
               </div>
               <div className="d-flex justify-content-between mb-2">

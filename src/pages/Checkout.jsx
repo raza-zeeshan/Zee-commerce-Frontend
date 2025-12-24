@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Container, Card, Form, Button, ListGroup } from 'react-bootstrap';
+import { Container, Card, Form, Button, ListGroup, Alert } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/useCart';
 import { useAuth } from '../context/useAuth';
@@ -12,30 +12,100 @@ function Checkout() {
   const [loading, setLoading] = useState(false);
   const [shippingAddress, setShippingAddress] = useState(user?.address || '');
   const [phone, setPhone] = useState(user?.phone || '');
+  const [error, setError] = useState('');
+  const [debugInfo, setDebugInfo] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setDebugInfo('');
     
+    // Validation
     if (!shippingAddress.trim()) {
-      alert('Please enter shipping address');
+      setError('Please enter shipping address');
+      return;
+    }
+
+    if (cartItems.length === 0) {
+      setError('Your cart is empty');
+      return;
+    }
+
+    if (!user || !user.id) {
+      setError('User information is missing. Please log in again.');
       return;
     }
 
     setLoading(true);
+    
     try {
+      // Format order data exactly as backend expects
       const orderData = {
         userId: user.id,
-        items: cartItems,
-        shippingAddress: shippingAddress,
+        shippingAddress: shippingAddress.trim(),
+        phone: phone.trim(),
+        items: cartItems.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.price
+        }))
       };
 
-      await orderAPI.create(orderData);
+      console.log('=== DEBUG INFO ===');
+      console.log('User:', user);
+      console.log('Cart Items:', cartItems);
+      console.log('Order Data:', orderData);
+      console.log('==================');
+
+      setDebugInfo(`Sending ${cartItems.length} items to server...`);
+
+      const response = await orderAPI.create(orderData);
+      
+      console.log('Response:', response);
+      console.log('Response Data:', response.data);
+      
+      setDebugInfo('Order created successfully!');
+      
+      // Clear cart after successful order
       clearCart();
-      alert('Order placed successfully!');
+      
+      alert('✅ Order placed successfully! Order ID: ' + response.data.id);
+      
+      // Navigate to orders page
       navigate('/orders');
     } catch (error) {
-      console.error('Error placing order:', error);
-      alert(error.response?.data?.error || 'Failed to place order. Please try again.');
+      console.error('=== ERROR DETAILS ===');
+      console.error('Error object:', error);
+      console.error('Error response:', error.response);
+      console.error('Error status:', error.response?.status);
+      console.error('Error data:', error.response?.data);
+      console.error('Error message:', error.message);
+      console.error('====================');
+
+      // Extract detailed error message
+      let errorMessage = 'Failed to place order. ';
+      
+      if (error.response?.status === 401) {
+        errorMessage = 'Session expired. Please log in again.';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'You do not have permission to place orders.';
+      } else if (error.response?.status === 400) {
+        errorMessage = 'Invalid order data: ' + (error.response?.data?.error || error.response?.data?.message || 'Please check your input');
+      } else if (error.response?.status === 404) {
+        errorMessage = 'Server endpoint not found. Please check the backend.';
+      } else if (error.response?.status === 500) {
+        errorMessage = 'Server error. Please contact support.';
+      } else if (error.message === 'Network Error') {
+        errorMessage = 'Network error. Is the backend running on http://localhost:8080?';
+      } else {
+        errorMessage = error.response?.data?.error 
+          || error.response?.data?.message 
+          || error.message 
+          || 'Unknown error occurred';
+      }
+      
+      setError(errorMessage);
+      setDebugInfo(`Error: ${error.response?.status} - ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -44,9 +114,10 @@ function Checkout() {
   if (cartItems.length === 0) {
     return (
       <Container className="text-center py-5">
-        <h2>Your cart is empty</h2>
+        <i className="bi bi-cart-x" style={{ fontSize: '4rem', color: '#ccc' }}></i>
+        <h2 className="mt-3">Your cart is empty</h2>
         <Button onClick={() => navigate('/products')} variant="primary" className="mt-3">
-          Go Shopping
+          Continue Shopping
         </Button>
       </Container>
     );
@@ -55,6 +126,21 @@ function Checkout() {
   return (
     <Container>
       <h1 className="mb-4">Checkout</h1>
+      
+      {/* Error Alert */}
+      {error && (
+        <Alert variant="danger" dismissible onClose={() => setError('')}>
+          <Alert.Heading>Order Failed</Alert.Heading>
+          <p>{error}</p>
+        </Alert>
+      )}
+
+      {/* Debug Info Alert */}
+      {debugInfo && (
+        <Alert variant="info" dismissible onClose={() => setDebugInfo('')}>
+          <small>{debugInfo}</small>
+        </Alert>
+      )}
       
       <div className="row">
         <div className="col-lg-8">
@@ -65,10 +151,24 @@ function Checkout() {
             <Card.Body>
               <Form onSubmit={handleSubmit}>
                 <Form.Group className="mb-3">
+                  <Form.Label>
+                    <strong>User ID:</strong>
+                  </Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={user?.id || 'Not available'}
+                    disabled
+                  />
+                  <Form.Text className="text-muted">
+                    {user?.id ? '✓ User ID found' : '✗ User ID missing - Login may have failed'}
+                  </Form.Text>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
                   <Form.Label>Full Name</Form.Label>
                   <Form.Control
                     type="text"
-                    value={user?.fullName || ''}
+                    value={user?.fullName || user?.username || ''}
                     disabled
                   />
                 </Form.Group>
@@ -89,12 +189,11 @@ function Checkout() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="Enter phone number"
-                    required
                   />
                 </Form.Group>
 
                 <Form.Group className="mb-3">
-                  <Form.Label>Shipping Address</Form.Label>
+                  <Form.Label>Shipping Address *</Form.Label>
                   <Form.Control
                     as="textarea"
                     rows={3}
@@ -110,9 +209,16 @@ function Checkout() {
                     type="submit" 
                     variant="primary" 
                     size="lg"
-                    disabled={loading}
+                    disabled={loading || cartItems.length === 0}
                   >
-                    {loading ? 'Placing Order...' : 'Place Order'}
+                    {loading ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Placing Order...
+                      </>
+                    ) : (
+                      'Place Order'
+                    )}
                   </Button>
                 </div>
               </Form>
@@ -133,7 +239,7 @@ function Checkout() {
                       <div>
                         <div className="fw-bold">{item.productName}</div>
                         <small className="text-muted">
-                          ${item.price} x {item.quantity}
+                          ${item.price.toFixed(2)} x {item.quantity}
                         </small>
                       </div>
                       <div className="fw-bold">
@@ -147,7 +253,7 @@ function Checkout() {
               <hr />
               
               <div className="d-flex justify-content-between mb-2">
-                <span>Subtotal:</span>
+                <span>Items ({cartItems.length}):</span>
                 <strong>${getCartTotal().toFixed(2)}</strong>
               </div>
               <div className="d-flex justify-content-between mb-2">

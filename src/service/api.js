@@ -1,6 +1,9 @@
 import axios from 'axios';
 
+// Make sure backend is running on port 8080
 const API_BASE_URL = 'http://localhost:8080/api';
+
+console.log('API Base URL:', API_BASE_URL);
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -13,12 +16,29 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
+    console.log('Token exists:', !!token);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    console.log('Request URL:', config.baseURL + config.url);
+    console.log('Request headers:', config.headers);
     return config;
   },
   (error) => Promise.reject(error)
+);
+
+// Add response interceptor for better error handling
+api.interceptors.response.use(
+  (response) => {
+    console.log('Response successful:', response.config.url);
+    return response;
+  },
+  (error) => {
+    console.error('Response error:', error.config?.url);
+    console.error('Error status:', error.response?.status);
+    console.error('Error data:', error.response?.data);
+    return Promise.reject(error);
+  }
 );
 
 // Auth APIs
@@ -50,7 +70,10 @@ export const categoryAPI = {
 // Order APIs
 export const orderAPI = {
   create: (orderData) => api.post('/orders', orderData),
-  getUserOrders: (userId) => api.get(`/orders/user/${userId}`),
+  getUserOrders: (userId) => {
+    console.log('Fetching orders for user:', userId);
+    return api.get(`/orders/user/${userId}`);
+  },
   getAll: () => api.get('/orders'),
   getById: (id) => api.get(`/orders/${id}`),
   updateStatus: (id, status) => api.put(`/orders/${id}/status`, { status }),

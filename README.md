@@ -18,8 +18,6 @@
 
 ---
 
-
-
 ## 🔧 Tech stack
 
 - **React 19** (functional components + hooks)

@@ -26,9 +26,7 @@
 - **Axios** for API requests
 - **Bootstrap 5** + **react-bootstrap** for UI
 - ESLint for linting
-
 ---
-
 ## 🚀 Features
 
 - User authentication (login/register) via `authAPI`

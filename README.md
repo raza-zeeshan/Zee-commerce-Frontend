@@ -35,9 +35,7 @@
 - Protected routes (user-only and admin-only)
 - Admin page for product/order management (scaffolded)
 - Clean context-based state: `AuthContext` and `CartContext`
-
 ---
-
 ## 📁 Project structure (key files)
 
 - `src/App.jsx` — routes and layout
@@ -46,9 +44,7 @@
 - `src/context/AuthContext.jsx` — auth provider and helpers
 - `src/context/CartContext.jsx` — cart provider and helpers
 - `src/service/api.js` — Axios instance + exported API helpers (`authAPI`, `productAPI`, `categoryAPI`, `orderAPI`)
-
 ---
-
 ## ⚙️ Environment variables
 
 Create a `.env` (or `.env.local`) at project root with:

@@ -29,6 +29,7 @@
 ---
 ## 🚀 Features
 
+
 - User authentication (login/register) via `authAPI`
 - Product listing, search, and detail views
 - Shopping cart with localStorage persistence
@@ -37,6 +38,7 @@
 - Clean context-based state: `AuthContext` and `CartContext`
 ---
 ## 📁 Project structure (key files)
+
 
 - `src/App.jsx` — routes and layout
 - `src/component/Navbar.jsx` — navigation bar

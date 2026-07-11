@@ -39,7 +39,6 @@
 ---
 ## 📁 Project structure (key files)
 
-
 - `src/App.jsx` — routes and layout
 - `src/component/Navbar.jsx` — navigation bar
 - `src/pages/` — `Home`, `Products`, `ProductDetail`, `Cart`, `Checkout`, `Login`, `Register`, `Profile`, `Orders`, `Admin`
